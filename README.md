@@ -1,5 +1,5 @@
 # README for Flask-on-Docker
-![https://github.com/westondcrewe/csci143_final_project/actions?query=workflow%3Atests](https://github.com/westondcrewe/csci143_final_project/workflows/tests/badge.svg)
+![https://github.com/westondcrewe/csci143-final-project/actions?query=workflow%3Atests](https://github.com/westondcrewe/csci143-final-project/workflows/tests/badge.svg)
 ## Overview
 This repository creates a web app that allows users to upload and view media files. The app is containerized in Docker and uses Flask's Python web development framework and a Postgres database for user information. Nginx acts as a reverse proxy for the app, and Gunicorn is used as a WSGI server to handle client requests. The app serves static files, like ```hello.txt``` in the ```project/static``` subfolder, as well as user-uploaded files, as shown in this screen recording. 
 
