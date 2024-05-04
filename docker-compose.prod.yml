@@ -14,10 +14,11 @@ services:
     env_file:
       - ./.env.prod
     depends_on:
-      - db
-  db:
-    image: postgres:13
+      - postgres
+  postgres:
+    build: ./services/postgres
     volumes:
+      - ./:/tmp/db
       - postgres_data_prod:/var/lib/postgresql/data/
     env_file:
       - ./.env.prod.db
@@ -27,7 +28,7 @@ services:
       - static_volume:/home/app/web/project/static
       - media_volume:/home/app/web/project/media
     ports:
-      - 1337:80
+      - 5961:80
     depends_on:
       - web
 
