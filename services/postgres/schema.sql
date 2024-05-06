@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 
 SET maintenance_work_mem = '16GB';
-/*SET max_parallel_maintenance_workers TO */
+SET max_parallel_maintenance_workers TO 80;
 
 BEGIN; /* create database within transaction */
 
