@@ -19,7 +19,15 @@ CREATE TABLE urls (
 CREATE TABLE tweets (
 	id_tweet BIGSERIAL PRIMARY KEY,
 	text TEXT,
-	id_user BIGINT REFERENCES users(id_user)
+	id_user BIGINT REFERENCES users(id_user),
+	id_url BIGINT REFERENCES urls(id_url),
+	created_at timestamp NOT NULL default current_timestamp
 );
 
+/*
+CREATE EXTENSION IF NOT EXISTS RUM;
+
+CREATE INDEX get_tweet ON tweets(created_at, id_tweet, id_user, text);
+CREATE INDEX search_tweet ON tweets USING RUM(to_tsvector('english', message));
+*/
 COMMIT;

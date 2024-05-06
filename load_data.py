@@ -6,6 +6,7 @@ import datetime
 import argparse
 import random
 import string
+from datetime import datetime, timedelta
 
 ################################################################################
 # helper functions
@@ -18,6 +19,14 @@ def generate_random_text(length):
     '''
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
+
+def generate_random_time():
+    start_date = datetime(2020, 1, 1)
+    end_date = datetime.now()
+    delta = end_date - start_date
+    random_days = random.randint(0, delta.days)
+    random_seconds = random.randint(0, 24*60*60)
+    return start_date + timedelta(days=random_days, seconds=random_seconds)
 
 def load_users(n_users):
     '''
@@ -64,6 +73,7 @@ def load_tweets(n_tweets):
     Generate data to be inserted into the tweets table
     '''
     user_ids = [row[0] for row in connection.execute('SELECT id_user FROM users')]
+    url_ids = [row[0] for row in connection.execute('SELECT id_url FROM urls')]
     for i in range(1,n_tweets+1):
         print("Create tweet ", i)
         id_tweet = i
@@ -71,23 +81,31 @@ def load_tweets(n_tweets):
         text = generate_random_text(tweet_len)
         #set tweet(id_user) to be some value from user(id_user) to ensure reference constraint
         id_user = random.choice(user_ids)
+        id_url = random.choice(url_ids)
+        created_at = generate_random_time()
 
         # insert into table
         sql = sqlalchemy.sql.text('''
             INSERT INTO tweets (
                 id_tweet,
                 text,
-                id_user)
+                id_user,
+                id_url,
+                created_at)
             VALUES (
                 :id_tweet,
                 :text,
-                :id_user)
+                :id_user,
+                :id_url,
+                :created_at)
             ON CONFLICT DO NOTHING;
         ''')
         res = connection.execute(sql, {
             'id_tweet': id_tweet,
             'text': text,
-            'id_user': id_user
+            'id_user': id_user,
+            'id_url': id_url,
+            'created_at': created_at
             })
 
 
@@ -148,8 +166,8 @@ if __name__ == '__main__':
     # call helper functions to load tables
     with connection.begin() as trans:
         load_users(num_users)
-        load_tweets(num_tweets)
         load_urls(num_urls)
+        load_tweets(num_tweets)
 
     # close database connection
     connection.close()

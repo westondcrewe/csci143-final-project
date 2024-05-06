@@ -5,6 +5,8 @@ from flask import (
     jsonify,
     send_from_directory,
     request,
+    render_template,
+    make_response
 )
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -26,10 +28,30 @@ class User(db.Model):
 
 
 @app.route("/")
-def hello_world():
-    return jsonify(hello="world")
+def root():
+    return render_template('root.html')
 
+@app.route("/login")
+def login():
+    return render_template('login.html')
 
+@app.route("/logout")
+def logout():
+    return "logout\n"
+
+@app.route("/create_account")
+def create_account():
+    return "create_account\n"
+
+@app.route("/create_message")
+def create_messages():
+    return "create_messages\n"
+
+@app.route("/search")
+def search():
+    return "search\n"
+
+'''
 @app.route("/static/<path:filename>")
 def staticfiles(filename):
     return send_from_directory(app.config["STATIC_FOLDER"], filename)
@@ -39,7 +61,7 @@ def staticfiles(filename):
 def mediafiles(filename):
     return send_from_directory(app.config["MEDIA_FOLDER"], filename)
 
-
+'''
 @app.route("/upload", methods=["GET", "POST"])
 def upload_file():
     if request.method == "POST":
