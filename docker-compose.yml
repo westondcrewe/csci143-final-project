@@ -20,7 +20,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=pass
-      - PGUSER=postgres
+      - POSTGRES_DB=postgres
         #ports:
         #- 5112:5432
 

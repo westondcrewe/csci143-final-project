@@ -7,7 +7,7 @@ fi
 
 if [ $# -eq 1 ]; then
 	echo "$1 rows in all tables"
-	python3 load_data.py --db=postgresql://postgres:pass@localhost:5432/postgres  --num_users=$1 --num_tweets=$1 --num_urls=$1
+	python3 load_data.py --db=postgresql://postgres:pass@postgres:5432/postgres  --num_users=$1 --num_tweets=$1 --num_urls=$1
 fi
 
 if [ $# -eq 3 ]; then
