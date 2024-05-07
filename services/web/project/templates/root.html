@@ -1,6 +1,28 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Home</h2>
-<p>Welcome to twitter clone.</p>
+	<h2>Home</h2>
+	<p>Welcome to twitter clone.</p>
+	<p><u>Tweets:</u></p>
+	<table class="tweets">
+		<tr><th>User </th><th>Tweet</th><th>Created at</th></tr>
+		{% for tweet in tweets %}
+		<tr>
+			<td>{{ tweet['username'] }}</td>
+			<td>{{ tweet['text'] }}</td>
+			<td>{{ tweet['created_at'] }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<div>
+		{% if prev_page < page_num %}
+        		<a href="?page={{ prev_page }}">Previous</a>
+    		{% endif %}
+
+    		Page {{ page_num }}
+
+    		{% if messages|length == 25 %}
+        		<a href="?page={{ next_page }}">Next</a>
+    		{% endif %}
+	</div>
 {% endblock %}
