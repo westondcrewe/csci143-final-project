@@ -5,12 +5,12 @@ services:
     build:
       context: ./services/web
       dockerfile: Dockerfile.prod
-    command: gunicorn --bind 0.0.0.0:5000 manage:app
+    command: gunicorn --bind 0.0.0.0:5111 manage:app
     volumes:
       - static_volume:/home/app/web/project/static
       - media_volume:/home/app/web/project/media
     expose:
-      - 5000
+      - 5111
     env_file:
       - ./.env.prod
     depends_on:
@@ -22,13 +22,15 @@ services:
       - postgres_data_prod:/var/lib/postgresql/data/
     env_file:
       - ./.env.prod.db
+    ports:
+      - 5112:5432
   nginx:
     build: ./services/nginx
     volumes:
       - static_volume:/home/app/web/project/static
       - media_volume:/home/app/web/project/media
     ports:
-      - 5961:80
+      - 5111:80
     depends_on:
       - web
 

@@ -1,6 +1,7 @@
 <html>
     <head>
-        <title>CS143 Twitter Clone</title>
+        <title>Fwitter!</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     </head>
     <body>
         <h1>CS143 Twitter Clone !!!</h1>
@@ -8,11 +9,11 @@
             <li><a href='/'>Home</a></li>
 	    <li><a href='/search'>Search</a></li>
             {% if logged_in %}
-            <li><a href='/create_message'>Create Message</a></li>
+            <li><a href='/create_tweet'>Create Fweet</a></li>
             <li><a href='/logout'>Logout</a></li>
             {% else %}
             <li><a href='/login'>Login</a></li>
-            <li><a href='/create_user'>Create Account</a></li>
+            <li><a href='/create_account'>Create Account</a></li>
             {% endif %}
         </ol>
 

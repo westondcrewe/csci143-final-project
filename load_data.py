@@ -77,7 +77,7 @@ def load_tweets(n_tweets):
     for i in range(1,n_tweets+1):
         print("Create tweet ", i)
         id_tweet = i
-        tweet_len = random.randint(1,255)
+        tweet_len = random.randint(1,140) #was 255 for twitter replication, switched to stay in bounds of tweet box
         text = generate_random_text(tweet_len)
         #set tweet(id_user) to be some value from user(id_user) to ensure reference constraint
         id_user = random.choice(user_ids)

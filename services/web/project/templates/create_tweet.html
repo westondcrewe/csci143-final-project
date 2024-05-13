@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Write a new Fweet!</h2>
+
+{% if invalid %}
+<p class="red">
+ERROR: Invalid message.
+</p>
+{% elif tweet_sent %}
+<p class="green">
+Your new Fweet has been sent!
+</p>
+{% endif %}
+
+<form action="/create_tweet" method="POST">
+    <table>
+        <tr>
+            <td><textarea name="tweet" class="message_box" rows="4" cols="50"></textarea></td>
+        </tr>
+        <tr>
+            <td><input type="submit" value="send message" class="submit"></td>
+        </tr>
+    </table>
+</form>
+{% endblock %}

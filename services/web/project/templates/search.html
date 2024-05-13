@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Search Fweets!</h2>
+<form action="/search" method="POST">
+    <input type="text" name="query" value="{{ query|e }}">
+    <input type="submit" value="Search">
+</form>
+{% if query %}
+	<p>Fweets:</p>
+	<div class="tweets">
+	{% for tweet in tweets %}
+		<div class="tweet">
+			<span class="username">User: {{ tweet['username'] }}</span>
+                        <p class="created-at">Created at: {{ tweet['created_at'] }}</p>
+                        <p class="text">{{ tweet['text'] }}</p>
+                        <span class="url">{{ tweet['url'] }}</span>
+                </div>
+	{% endfor %}
+        </div>
+{% else %}
+	{% include '_tweets.html' %}
+{% endif %}
+
+<div>
+                {% if prev_page < page_num and prev_page > 0 %}
+                        <a href="?page={{ prev_page }}">Previous</a>
+                {% endif %}
+
+                Page {{ page_num }}
+
+                {% if tweets|length == 20 %}
+                        <a href="?page={{ next_page }}">Next</a>
+                {% endif %}
+        </div>
+
+{% endblock %}
