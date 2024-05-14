@@ -172,42 +172,44 @@ def logout():
 
 @app.route("/create_account", methods=['GET', 'POST'])
 def create_account():
-    username = request.cookies.get('username')
-    password = request.cookies.get('password')
-    credentials = are_credentials_good(username, password)
-    if credentials:
-        print("Logged in")
-        return redirect('/')
+    if request.method == 'POST':
+        username = request.cookies.get('username')
+        password = request.cookies.get('password')
+        credentials = are_credentials_good(username, password)
+        if credentials:
+            print("Logged in")
+            return redirect('/')
 
-    new_username = request.form.get('new_username')
-    new_password = request.form.get('new_password')
-    new_password_verify = request.form.get('new_password_verify')
+        new_username = request.form.get('new_username')
+        new_password = request.form.get('new_password')
+        new_password_verify = request.form.get('new_password_verify')
 
-    if new_username is None:  # not logged in, go to create_account page
-        return render_template('create_account.html')
-    elif not new_username or not new_password or not new_password_verify:  # missing input
-        return render_template('create_account.html', missing_input=True)
-    else:  # username and password provided
-        if new_password != new_password_verify:
-            return render_template('create_account.html', password_mismatch=True)
-        else:  # passwords match, must ensure UNIQUE constraint on username
-            try:  # failure on insert command means username of new account is already taken
-                with connection.begin():
-                    sql = sqlalchemy.sql.text('''
-                        INSERT INTO users (username, password)
-                        VALUES (:username, :password)
-                    ''')
+        if new_username is None:  # not logged in, go to create_account page
+            return render_template('create_account.html')
+        elif not new_username or not new_password or not new_password_verify:  # missing input
+            return render_template('create_account.html', missing_input=True)
+        else:  # username and password provided
+            if new_password != new_password_verify:
+                return render_template('create_account.html', password_mismatch=True)
+            else:  # passwords match, must ensure UNIQUE constraint on username
+                try:  # failure on insert command means username of new account is already taken
+                    with connection.begin():
+                        sql = sqlalchemy.sql.text('''
+                            INSERT INTO users (username, password)
+                            VALUES (:username, :password)
+                        ''')
 
-                    connection.execute(sql, {
-                        'username': new_username,
-                        'password': new_password
-                    })
-                response = make_response(redirect('/'))
-                response.set_cookie('username', new_username)
-                response.set_cookie('password', new_password)
-                return response
-            except sqlalchemy.exc.IntegrityError:  # username of new account is already taken
-                return render_template('create_account.html', already_exists=True)
+                        connection.execute(sql, {
+                            'username': new_username,
+                            'password': new_password
+                        })
+                    response = make_response(redirect('/'))
+                    response.set_cookie('username', new_username)
+                    response.set_cookie('password', new_password)
+                    return response
+                except sqlalchemy.exc.IntegrityError:  # username of new account is already taken
+                    return render_template('create_account.html', already_exists=True)
+            return render_template('create_account.html')
 
 
 @app.route("/create_tweet")
