@@ -1,37 +1,54 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Search Fweets!</h2>
-<form action="/search" method="POST">
-    <input type="text" name="query" value="{{ query|e }}">
-    <input type="submit" value="Search">
-</form>
-{% if query %}
-	<p>Fweets:</p>
-	<div class="tweets">
-	{% for tweet in tweets %}
-		<div class="tweet">
-			<span class="username">User: {{ tweet['username'] }}</span>
+    <h2>Search Results</h2>
+    <form action="/search" method="GET">
+        <input type="text" name="query" placeholder="Enter your search query">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if query %}
+        <!-- Display search results -->
+        <div class="tweet-list">
+            {% for tweet in messages %}
+	    	<div class="tweet">
+                        <span class="username">User: {{ tweet['username'] }}</span>
                         <p class="created-at">Created at: {{ tweet['created_at'] }}</p>
                         <p class="text">{{ tweet['text'] }}</p>
                         <span class="url">{{ tweet['url'] }}</span>
                 </div>
-	{% endfor %}
+            {% endfor %}
         </div>
-{% else %}
-	{% include '_tweets.html' %}
-{% endif %}
+    {% else %}
 
-<div>
-                {% if prev_page < page_num and prev_page > 0 %}
-                        <a href="?page={{ prev_page }}">Previous</a>
-                {% endif %}
 
-                Page {{ page_num }}
 
-                {% if tweets|length == 20 %}
-                        <a href="?page={{ next_page }}">Next</a>
-                {% endif %}
+
+        <!-- Display default tweets -->
+        <div class="tweet-list">
+            {% for tweet in messages %}
+                <div class="tweet">
+                    <div class="user-info">
+                        <span class="user-name">{{ tweet.username }}</span>
+                    </div>
+                    <div class="tweet-content">
+                        <p class="tweet-text">{{ tweet.text }}</p>
+                        <p class="created-at">Created at: {{ tweet.created_at }}</p>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
+    {% endif %}
+    <div>
+    {% if page_num > 1 %}
+        <a href="?query={{ query|urlencode }}&page={{ page_num - 1 }}">Previous</a>   
+    {% endif %}
 
+    Page {{ page_num }}
+
+    {% if messages|length == 20 %}
+        <a href="?query={{ query|urlencode }}&page={{ page_num + 1 }}">Next</a>
+    {% endif %}
+</div>
 {% endblock %}
+

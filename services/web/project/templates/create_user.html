@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Create a new user here</h2>
+
+{% if one_blank %}
+<p class="red">
+ERROR: Invalid username or password.
+</p>
+{% elif not_matching %}
+<p class="red">
+ERROR: Your passwords do not match. Try again.
+</p>
+{% elif already_exists %}
+<p class="red">
+ERROR: That username already exists. Try again.
+</p>
+{% elif invalid_age %}
+<p class="red">
+ERROR: Invalid age. Try again.
+</p>
+{% endif %}
+
+
+<form action="/create_account" method="POST">
+    <table>
+        <tr>
+            <td>username</td>
+            <td><input type="text" name="username_new"></td>
+        </tr>
+        <tr>
+            <td>password</td>
+            <td><input type="password" name="password_new"></td>
+        </tr>
+        <tr>
+            <td>retype password</td>
+            <td><input type="password" name="password_new2"></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="submit" value="create account" class="submit"></td>
+        </tr>
+    </table>
+</form>
+{% endblock %}

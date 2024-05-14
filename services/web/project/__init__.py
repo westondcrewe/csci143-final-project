@@ -87,34 +87,35 @@ def get_tweets(page_num=1, tweets_per_page=20):
 
 
 def search_tweets(query, page_num):
+    messages = []
+    offset = (page_num - 1) * 20
     sql = sqlalchemy.sql.text("""
-    SELECT ts_headline(
-        text, plainto_tsquery(:query),
-        'Start="<mark><b>", Stop="</b></mark>"')
-    AS highlight,
+    SELECT id_tweets,
+    ts_headline('english', text, plainto_tsquery(:query), 'StartSel=<span> StopSel=</span>') AS highlighted_text,
     created_at,
-    username
+    id_users
     FROM tweets
-    JOIN users ON (tweets.id_user = users.id_user)
     WHERE to_tsvector('english', text) @@ plainto_tsquery(:query)
-    ORDER BY ts_rank_cd(to_tsvector('english', text), plainto_tsquery(:query)) DESC, created_at DESC
-    LIMIT 20 OFFSET :offset;""")
-    res = connection.execute(sql, {
-        'offset': (page_num - 1) * 20,
-        'query': ' & '.join(query.split())
-    })
-    tweets = []
-    for row_tweet in res.fetchall():
-        text = row_tweet[0]
-        cleaned_text = bleach.clean(text, tags=['b', 'mark'])
-        linkify_text = bleach.linkify(cleaned_text)
-        created_at = row_tweet[1]
-        username = row_tweet[2]
-        tweets.append({
-            'text': linkify_text,
-            'username': username,
-            'created_at': created_at})
-    return tweets
+    ORDER BY created_at DESC
+    LIMIT 20 OFFSET :offset;
+""")
+
+    res = connection.execute(sql, {'query': ' & '.join(query.split()), 'offset': offset})
+    for row in res.fetchall():
+        user_sql = sqlalchemy.sql.text("""
+            SELECT username
+            FROM users
+            WHERE id_users = :id_users;
+        """)
+        user_res = connection.execute(user_sql, {'id_users': row[3]})
+        user_row = user_res.fetchone()
+        messages.append({
+            'username': user_row[0],
+            'text': bleach.clean(row[1], tags=['p', 'br', 'a', 'b', 'span'], attributes={'a': ['href']}).replace("<span>", "<span class=highlight>"),
+            'created_at': row[2]
+        })
+
+    return messages
 
 
 @app.route("/")
@@ -170,49 +171,46 @@ def logout():
     return response_logout
 
 
-@app.route("/create_account", methods=['GET', 'POST'])
+@app.route('/create_account', methods=['GET', 'POST'])
 def create_account():
-    if request.method == 'POST':
-        username = request.cookies.get('username')
-        password = request.cookies.get('password')
-        credentials = are_credentials_good(username, password)
-        if credentials:
-            print("Logged in")
-            return redirect('/')
+    username = request.cookies.get('username')
+    password = request.cookies.get('password')
 
-        new_username = request.form.get('new_username')
-        new_password = request.form.get('new_password')
-        new_password_verify = request.form.get('new_password_verify')
+    good_credentials = are_credentials_good(username, password)
+    print("good_credentials = ", good_credentials)
 
-        if new_username is None:  # not logged in, go to create_account page
-            return render_template('create_account.html')
-        elif not new_username or not new_password or not new_password_verify:  # missing input
-            return render_template('create_account.html', missing_input=True)
-        else:  # username and password provided
-            if new_password != new_password_verify:
-                return render_template('create_account.html', password_mismatch=True)
-            else:  # passwords match, must ensure UNIQUE constraint on username
-                try:  # failure on insert command means username of new account is already taken
-                    with connection.begin():
-                        sql = sqlalchemy.sql.text('''
-                            INSERT INTO users (username, password)
-                            VALUES (:username, :password)
-                        ''')
+    if good_credentials:
+        return redirect('/')
 
-                        connection.execute(sql, {
-                            'username': new_username,
-                            'password': new_password
-                        })
-                    response = make_response(redirect('/'))
-                    response.set_cookie('username', new_username)
-                    response.set_cookie('password', new_password)
-                    return response
-                except sqlalchemy.exc.IntegrityError:  # username of new account is already taken
-                    return render_template('create_account.html', already_exists=True)
-            return render_template('create_account.html')
+    username_new = request.form.get('username_new')
+    password_new = request.form.get('password_new')
+    password_new2 = request.form.get('password_new2')
+
+    if username_new is None:
+        return render_template('create_user.html')
+
+    elif not username_new or not password_new:
+        return render_template('create_user.html', one_blank=True)
+
+    else:
+        if password_new != password_new2:
+            return render_template('create_user.html', password_mismatch=True)
+        else:
+            try:
+                sql = sqlalchemy.sql.text("""INSERT into users (username, password) values(:username, :password);""")
+                res = connection.execute(sql, {
+                    'username': username_new,
+                    'password': password_new})
+                print(res)
+                response = make_response(redirect('/'))
+                response.set_cookie('username', username_new)
+                response.set_cookie('password', password_new)
+                return response
+            except sqlalchemy.exc.IntegrityError:
+                return render_template('create_user.html', already_exists=True)
 
 
-@app.route("/create_tweet")
+@app.route("/create_tweet", methods=['GET', 'POST'])
 def create_tweet():
     username = request.cookies.get('username')
     password = request.cookies.get('password')
@@ -249,14 +247,22 @@ def create_tweet():
 def search():
     username = request.cookies.get('username')
     password = request.cookies.get('password')
-    credentials = are_credentials_good(username, password)
+    good_credentials = are_credentials_good(username, password)
+
+    if good_credentials:
+        logged_in = True
+    else:
+        logged_in = False
+    print('logged-in=', logged_in)
+
     page_num = int(request.args.get('page', 1))
     query = request.args.get('query', '')
+
     if query:
-        tweets = search_tweets(query, page_num)
+        messages = search_tweets(query, page_num)
     else:
-        tweets = get_tweets(page_num)
-    next_page = page_num + 1
-    prev_page = 1 if page_num == 0 else page_num - 1
-    response = make_response(render_template('search.html', tweets=tweets, logged_in=credentials, username=username, page_num=page_num, next_page=next_page, prev_page=prev_page, query=query))
+        messages = get_tweets(page_num)
+
+    response = make_response(render_template('search.html', messages=messages, logged_in=logged_in, username=username, page_num=page_num, query=query))
+
     return response
