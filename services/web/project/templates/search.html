@@ -14,7 +14,7 @@
 	    	<div class="tweet">
                         <span class="username">User: {{ tweet['username'] }}</span>
                         <p class="created-at">Created at: {{ tweet['created_at'] }}</p>
-                        <p class="text">{{ tweet['text'] }}</p>
+                        <p class="text">{{ tweet['text']|safe }}</p>
                         <span class="url">{{ tweet['url'] }}</span>
                 </div>
             {% endfor %}

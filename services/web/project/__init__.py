@@ -87,35 +87,35 @@ def get_tweets(page_num=1, tweets_per_page=20):
 
 
 def search_tweets(query, page_num):
-    messages = []
-    offset = (page_num - 1) * 20
     sql = sqlalchemy.sql.text("""
-    SELECT id_tweets,
-    ts_headline('english', text, plainto_tsquery(:query), 'StartSel=<span> StopSel=</span>') AS highlighted_text,
+    SELECT id_user,
+    ts_headline(
+        text, plainto_tsquery(:query),
+        'StartSel="<mark><b>", StopSel="</b></mark>"')
+    AS highlighted_message,
     created_at,
-    id_users
-    FROM tweets
+    id_tweet,
+    username
+    FROM tweets JOIN users USING (id_user)
     WHERE to_tsvector('english', text) @@ plainto_tsquery(:query)
-    ORDER BY created_at DESC
-    LIMIT 20 OFFSET :offset;
-""")
+    ORDER BY ts_rank_cd(to_tsvector('english', text), plainto_tsquery(:query)) DESC,
+    created_at DESC LIMIT 20 OFFSET :offset;""")
+    res = connection.execute(sql, {
+        'offset': (page_num - 1) * 20,
+        'query': ' & '.join(query.split())
+    })
 
-    res = connection.execute(sql, {'query': ' & '.join(query.split()), 'offset': offset})
-    for row in res.fetchall():
-        user_sql = sqlalchemy.sql.text("""
-            SELECT username
-            FROM users
-            WHERE id_users = :id_users;
-        """)
-        user_res = connection.execute(user_sql, {'id_users': row[3]})
-        user_row = user_res.fetchone()
-        messages.append({
-            'username': user_row[0],
-            'text': bleach.clean(row[1], tags=['p', 'br', 'a', 'b', 'span'], attributes={'a': ['href']}).replace("<span>", "<span class=highlight>"),
-            'created_at': row[2]
-        })
-
-    return messages
+    tweets = []
+    for row_tweets in res.fetchall():
+        text = row_tweets[1]
+        cleaned_text = bleach.clean(text, tags=['b', 'mark'])
+        linked_text = bleach.linkify(cleaned_text)
+        tweets.append({
+            'id_tweet': row_tweets[3],
+            'text': linked_text,
+            'username': row_tweets[4],
+            'created_at': row_tweets[2]})
+    return tweets
 
 
 @app.route("/")
