@@ -116,9 +116,9 @@ def load_urls(n_urls):
     generated_urls = set()
     for i in range(1,n_urls+1):
         print("Create url ", i)
-        url = "www.westonfaketwitter_"+generate_random_text(3)
+        url = "www.westonfaketwitter_"+generate_random_text(10)
         while url in generated_urls:
-            url = "www.westonfaketwitter_"+generate_random_text(3)
+            url = "www.westonfaketwitter_"+generate_random_text(10)
         generated_urls.add(url)
         id_url = i
 

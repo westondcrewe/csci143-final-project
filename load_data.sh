@@ -12,5 +12,5 @@ fi
 
 if [ $# -eq 3 ]; then
 	echo "$1 Users\n$2 Tweets\n$3 Urls"
-	python3 load_data.py --db=postgresql://postgres:pass@postgres:5112  --num_users=$1 --num_tweets=$2 --num_urls=$3
+	python3 load_data.py --db=postgresql://postgres:pass@localhost:5112  --num_users=$1 --num_tweets=$2 --num_urls=$3
 fi
