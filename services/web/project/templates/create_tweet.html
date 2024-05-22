@@ -5,8 +5,10 @@
 
 {% if invalid %}
 <p class="red">
-ERROR: Invalid message.
+ERROR: No Fweet provided, please type your message.
 </p>
+{% elif error %}
+ERROR: A SQLAlchemy exception was thrown while trying to send your Fweet.
 {% elif tweet_sent %}
 <p class="green">
 Your new Fweet has been sent!
@@ -16,10 +18,10 @@ Your new Fweet has been sent!
 <form action="/create_tweet" method="POST">
     <table>
         <tr>
-            <td><textarea name="tweet" class="message_box" rows="4" cols="50"></textarea></td>
+            <td><textarea name="text" class="message_box" rows="4" cols="50"></textarea></td>
         </tr>
         <tr>
-            <td><input type="submit" value="send message" class="submit"></td>
+            <td><input type="submit" value="send fweet" class="submit"></td>
         </tr>
     </table>
 </form>

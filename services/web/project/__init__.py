@@ -7,7 +7,8 @@ from flask import (
     request,
     render_template,
     make_response,
-    redirect
+    redirect,
+    url_for
 )
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy
@@ -15,6 +16,8 @@ import psycopg2
 from werkzeug.utils import secure_filename
 import bleach
 import datetime
+import pytz
+import random
 
 app = Flask(__name__)
 engine = sqlalchemy.create_engine(os.getenv('DATABASE_URL'), connect_args={'application_name': '__init__py'})
@@ -118,6 +121,31 @@ def search_tweets(query, page_num):
     return tweets
 
 
+def spell_suggest(search_text):
+    suggestions = []
+
+    for word in search_text.split():
+
+        sql = sqlalchemy.sql.text("""
+        SELECT word, similarity
+        FROM fts_word,
+        SIMILARITY(word, :query) AS similarity
+        ORDER BY similarity DESC LIMIT 1;
+        """)
+
+        res = connection.execute(sql, {
+            'query': word
+        })
+
+        try:
+            suggestions.append(res.fetchone()[0])
+        except TypeError:
+            pass
+
+    suggestion = ' '.join(suggestions)
+    return suggestion
+
+
 @app.route("/")
 def root():
     username = request.cookies.get('username')
@@ -147,7 +175,9 @@ def login():
 
     # they submitted a form; we're on the POST method
     else:
-        if not good_credentials:
+        if not username or not password:
+            return render_template('login.html', missing_input=True)
+        elif not good_credentials:
             return render_template('login.html', bad_credentials=True)
         else:
             # if we get here, then we're logged in
@@ -186,11 +216,21 @@ def create_account():
     password_new = request.form.get('password_new')
     password_new2 = request.form.get('password_new2')
 
+    sql_username = sqlalchemy.sql.text("""
+        SELECT count(*)
+        FROM users
+        WHERE username=:username""")
+    res_username = connection.execute(sql_username, {
+        'username': username_new})
+
     if username_new is None:
         return render_template('create_user.html')
 
-    elif not username_new or not password_new:
+    elif not username_new or not password_new or not password_new2:
         return render_template('create_user.html', one_blank=True)
+
+    elif int(res_username.fetchone()[0]) != 0:
+        return render_template('create_user.html', already_exists=True)
 
     else:
         if password_new != password_new2:
@@ -217,52 +257,71 @@ def create_tweet():
     credentials = are_credentials_good(username, password)
     if not credentials:
         return redirect('/')
-    sql = sqlalchemy.sql.text('''
-        SELECT id_user FROM users
-        WHERE username = :username AND password = :password''')
-    res = connection.execute(sql, {
-        'username': username,
-        'password': password})
-    for row_user in res.fetchall():
-        id_user = row_user[0]
+
+    if request.method == 'GET':
+        return render_template('create_tweet.html', logged_in=credentials)
+
     text = request.form.get('text')
     if text is None:
         return render_template('create_tweet.html', logged_in=credentials)
     elif not text:
-        return render_template('create_tweet.html', invalid_message=True, logged_in=credentials)
+        return render_template('create_tweet.html', invalid=True, logged_in=credentials)
     else:
-        created_at = str(datetime.datetime.now()).split('.')[0]
-        sql = sqlalchemy.sql.text("""
-            INSERT INTO tweets (id_user, text, created_at)
-            VALUES (:id_user, :text, :created_at);
-        """)
-        res = connection.execute(sql, {
-            'id_user': id_user,
-            'text': text,
-            'created_at': created_at})
-    return render_template('create_tweet.html', logged_in=credentials, tweet_sent=True)
+        try:
+            # with connection.begin():
+            sql_id = sqlalchemy.sql.text('''
+                SELECT id_user FROM users
+                WHERE username = :username AND password = :password''')
+            res = connection.execute(sql_id, {
+                'username': username,
+                'password': password})
+            id_user = int(res.fetchone()[0])
+
+            created_at_utc = datetime.datetime.now(pytz.utc)
+            la_timezone = pytz.timezone('America/Los_Angeles')
+            la_time_now = created_at_utc.astimezone(la_timezone)
+            created_at = la_time_now.strftime('%Y-%m-%d %H:%M:%S')
+
+            sql_url_count = connection.execute(
+                sqlalchemy.sql.text('''
+                    SELECT count(*)
+                    FROM urls;'''))
+            url_count = int(sql_url_count.fetchone()[0])
+            id_url = random.randint(1, url_count)
+            sql_insert = sqlalchemy.sql.text("""
+                INSERT INTO tweets (text, id_user, id_url, created_at)
+                VALUES (:text, :id_user, :id_url, :created_at);
+            """)
+            res = connection.execute(sql_insert, {
+                'text': text,
+                'id_user': id_user,
+                'id_url': id_url,
+                'created_at': created_at})
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print(e)
+            return render_template('create_tweet.html', error=True, logged_in=credentials)
+        else:
+            return render_template('create_tweet.html', tweet_sent=True, logged_in=credentials)
 
 
-@app.route("/search", methods=['GET'])
+@app.route("/search", methods=['GET', 'POST'])
 def search():
     username = request.cookies.get('username')
     password = request.cookies.get('password')
     good_credentials = are_credentials_good(username, password)
-
-    if good_credentials:
-        logged_in = True
-    else:
-        logged_in = False
-    print('logged-in=', logged_in)
-
     page_num = int(request.args.get('page', 1))
-    query = request.args.get('query', '')
+
+    if request.form.get('query'):
+        query = request.form.get('query')
+    else:
+        query = request.args.get('query', '')
 
     if query:
         messages = search_tweets(query, page_num)
+        suggestion = spell_suggest(query)
+        response = make_response(render_template('search.html', messages=messages, logged_in=good_credentials, username=username, page_num=page_num, query=query, suggestion=suggestion))
     else:
         messages = get_tweets(page_num)
-
-    response = make_response(render_template('search.html', messages=messages, logged_in=logged_in, username=username, page_num=page_num, query=query))
+        response = make_response(render_template('search.html', messages=messages, logged_in=good_credentials, username=username, page_num=page_num, query=query))
 
     return response

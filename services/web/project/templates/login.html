@@ -3,7 +3,11 @@
 {% block content %}
 <h2>Login Webpage</h2>
 
-{% if bad_credentials %}
+{% if missing_input %}
+<p class='color:red;'>
+    ERROR: Username and/or password missing.
+</p>
+{% elif bad_credentials %}
 <p class='color:red;'>
     ERROR: Username or password incorrect.
 </p>
@@ -25,5 +29,4 @@
         </tr>
     </table>
 </form>
-<p>New information.</p>
 {% endblock %}

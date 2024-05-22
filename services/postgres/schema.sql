@@ -25,7 +25,12 @@ CREATE TABLE tweets (
 	created_at timestamp NOT NULL default current_timestamp
 );
 
+CREATE TABLE fts_word (
+    	word text PRIMARY KEY
+);
+
 CREATE EXTENSION IF NOT EXISTS RUM;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE INDEX get_tweet ON tweets(created_at, id_tweet, id_user, text);
 CREATE INDEX search_tweet ON tweets USING RUM(to_tsvector('english', text));

@@ -9,6 +9,10 @@
 
     {% if query %}
         <!-- Display search results -->
+	{% if suggestion and suggestion != query %}
+		<p class="suggestion">Did you mean to search for <a href="{{ url_for('search', query=suggestion) }}">{{suggestion}}</a>?</p>
+	{% endif %}	
+
         <div class="tweet-list">
             {% for tweet in messages %}
 	    	<div class="tweet">
@@ -20,10 +24,6 @@
             {% endfor %}
         </div>
     {% else %}
-
-
-
-
         <!-- Display default tweets -->
         <div class="tweet-list">
             {% for tweet in messages %}
